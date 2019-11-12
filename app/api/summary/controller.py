@@ -17,7 +17,8 @@ err = error.Error
 
 @api.route('/info')
 class GetInfoTutorOrStudent(Resource):
-  # student can switch and see subject, tutor and vice versa
+  # student can switch subject to see who is tutor and their summary
+  # tutor can switch subject to see who is their student and their summary
   @api.doc('get info')
   def get(self):
     payload = GetSummariesRequestSchema().parser.parse_args(strict=True)

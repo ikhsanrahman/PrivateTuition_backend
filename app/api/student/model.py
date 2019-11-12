@@ -2,7 +2,7 @@ from app.api.create_app import db
 from app.api.db_model import *
 from app.api.student.serializer import StudentSchema
 from app.api.error import error
-from flask import jsonify
+from flask import jsonify, request
 
 from app.api.config.config import Config
 
@@ -109,6 +109,7 @@ class StudentProcess:
 			return err.requestFailed("Student is not available")
 
 	def loginStudent(self, payload):
+		responses = {}
 		student = Student.query.filter_by(email=payload['email'], status_login=False).first()
 		if student and student.check_password_hash(payload['password']):
 			student.status_login = True
@@ -116,13 +117,17 @@ class StudentProcess:
 			student.activation = True
 			db.session.commit()
 			result = StudentSchema().dump(student)
-			return jsonify(result)
+
+			auth_token = student.encode_auth_token(result['student_uuid'])
+
+			responses['result'] = result
+			responses['token'] = auth_token.decode()
+			return err.requestSuccess(responses)
 
 		return err.requestFailed("login failed")
 
 	def logoutStudent(self, student_uuid):
 		student = Student.query.filter_by(student_uuid=student_uuid, status_login=True).first()
-
 		if student:
 			student.status_login = False
 			Student.time_logout = TIME

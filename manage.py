@@ -26,7 +26,7 @@ manager.add_command('db', MigrateCommand)
 
 @manager.command
 def run():
-	host = '127.0.0.1'
+	host = '0.0.0.0'
 	app.run(host=host, debug=True, port=os.getenv("PORT_ENV") or 6000)
 
 @manager.command

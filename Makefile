@@ -15,13 +15,13 @@ test:
 	python -u manage.py test
 
 init:
-	python -u manage.py db init
+	python manage.py db init
 
 mig:
-	python -u manage.py db migrate
+	python manage.py db migrate -m "first migrate"
 
 upg:
-	python -u manage.py db upgrade
+	python manage.py db upgrade
 
 run:
 	python -u manage.py run

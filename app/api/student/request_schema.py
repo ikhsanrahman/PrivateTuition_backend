@@ -50,6 +50,6 @@ class UpdatePasswordRequestSchema:
 
 class ForgetPasswordRequestSchema:
 	parser = reqparse.RequestParser()
-	parser.add_argument("email", 					   						type=str, required=True)
+	parser.add_argument("email",						type=str, required=True)
 	parser.add_argument("new_password",                	type=str, required=True)
 	parser.add_argument("confirm_new_password",        	type=str, required=True)

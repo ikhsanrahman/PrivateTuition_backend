@@ -1,0 +1,47 @@
+version : '3'
+services :
+    postgres: 
+      container_name: BE_muonPrivate_dev_postgresql
+      build:
+        context: ./dockerfiles/postgresql
+      restart: always
+      ports:
+        - 5432:5433
+      env_file:
+        - env_variable/dev_env_file
+      volumes:
+        - "db_volume:/var/lib/postgresql/data"
+ 
+    flask: 
+        build:
+          context: .
+          dockerfile: dockerfiles/flask/Dockerfile
+        command: bash run/run.sh
+        container_name: be_muonprivate_dev
+        working_dir: /app
+
+        env_file: 
+          - env_variable/dev_env_file
+
+        depends_on: 
+          - postgres
+        ports:
+          - 5050:5050
+        volumes: 
+          - "db_volume:/app/flask"
+
+
+    nginx:
+      restart: always
+      container_name: be_muonprivate_nginx
+      build: 
+        context: .
+        dockerfile: dockerfiles/nginx/Dockerfile
+
+      ports:
+        - 80:80
+      depends_on:
+        - flask
+
+volumes:
+  db_volume :

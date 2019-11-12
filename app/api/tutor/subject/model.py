@@ -24,7 +24,7 @@ class SubjectProcess:
 		get_tutor = Tutor.query.filter_by(tutor_uuid=tutor_uuid, status_login=True,is_working=True, \
 			activation=True).first()
 		get_subject = Subject.query.filter_by(subject_name=payload['subject_name']).first()
-		
+		print(get_subject, 'wewe')
 		if get_tutor:
 			if not get_subject:
 				new_subject = Subject(subject_name=payload['subject_name'], price=payload['price'], \

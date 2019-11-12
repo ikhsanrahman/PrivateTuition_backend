@@ -10,6 +10,7 @@ from app.api.student.request_schema import *
 from app.api.config import config
 from app.api.error import error
 from app.api.namespace import Student, Home
+from ..utilization.decorator import student_token_required
 
 api = Student.api
 home = Home.api
@@ -38,14 +39,14 @@ class StudentLogin(Resource) :
 
 @api.route('/<string:student_uuid>/logout')
 class StudentLogout(Resource) :
+  @student_token_required
   def get(self, student_uuid):
-
-    logout = StudentProcess().logoutStudent(student_uuid)
+    token = request.headers.get('Authorization')
+    logout = StudentProcess().logoutStudent(student_uuid, )
     return logout
 
 @api.route('/search')
 class SearchNameStudent(Resource) :
-
   @api.doc('search student by name')
   def get(self) :
     payload = SearchStudentNameRequestSchema().parser.parse_args(strict=True)
@@ -55,7 +56,7 @@ class SearchNameStudent(Resource) :
 
 @api.route('/<string:student_uuid>/student/<string:subject_uuid>/subject/choosesubject')
 class ChoosingSubject(Resource) :
-
+  @student_token_required
   @api.doc('student choose tutor')
   def get(self, student_uuid, subject_uuid) :
 
@@ -80,19 +81,22 @@ class Student(Resource):
       result = StudentProcess().createStudent(payload)
       return result
 
-  def patch(self):
-      payload = ForgetPasswordRequestSchema().parser.parse_args(strict=True)
-      errors = ForgetPasswordSchema().validate(payload)
-      if errors:
-          return errors
+  @api.doc('student forget password')    
+  @student_token_required
+  def patch(self):  
+    payload = ForgetPasswordRequestSchema().parser.parse_args(strict=True)
+    errors = ForgetPasswordSchema().validate(payload)
+    if errors:
+        return errors
 
-      result = StudentProcess().forgetPassword(payload)
-      return result
+    result = StudentProcess().forgetPassword(payload)
+    return result
 
 @api.route('/<string:student_uuid>')
 class UpdateUnactivateStudent(Resource):
     
     @api.doc('update a Student')
+    @student_token_required
     def put(self, student_uuid):
        
         payload = UpdateStudentRequestSchema().parser.parse_args(strict=True)
@@ -112,7 +116,7 @@ class UpdateUnactivateStudent(Resource):
 
 @api.route('/<string:student_uuid>/updatepassword')
 class UpdatePasswordStudent(Resource):
-    
+    @student_token_required
     @api.doc('update password Student')
     def patch(self, student_uuid):
        

@@ -9,12 +9,19 @@ from app.api.tutor.model import TutorProcess
 from app.api.tutor.request_schema import *
 from app.api.config import config
 from app.api.error import error
-from app.api.namespace import Tutor
+from app.api.namespace import Tutor, Home
 
 api = Tutor.api
+home = Home.api
 err = error.Error
 
-     
+@home.route('')
+class Home(Resource) :
+  def get(self):
+    responses = {}
+    responses['message'] = "Welcome to Muon Private Platform"
+    return responses
+
 @api.route('/login')
 class TutorLogin(Resource) :
   def get(self):
@@ -109,9 +116,9 @@ class UpdateProfileTutor(Resource):
     updateTutor = TutorProcess().updateTutor(payload, tutor_uuid)
     return updateTutor
 
-@api.route('/<string:tutor_uuid>/reactivate')
+@api.route('/<string:tutor_uuid>/unactivate')
 class UnactivateTutor(Resource):
-  @api.doc('unactivateTutor a tutor')
+  @api.doc('unactivate a tutor')
   def get(self, tutor_uuid):
     result = TutorProcess().unactivateTutor(tutor_uuid)
     return result

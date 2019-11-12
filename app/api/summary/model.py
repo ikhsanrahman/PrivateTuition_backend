@@ -15,43 +15,45 @@ err = error.Error
 class SummaryProcess:
 
 	def getSummaries(self, payload):
-		get_tutor = Tutor.query.filter_by(tutor_uuid=payload['tutor_uuid'], activation=True, is_working=True,\
-			status_login=True).first()
 
-		get_student = Student.query.filter_by(student_uuid=payload['student_uuid'], status_login=True, \
-			activation=True).first()
+		get_subject = Subject.query.filter_by(subject_uuid=payload['subject_uuid'], \
+				subject_name=payload['subject_name']).first()
 
-		if get_tutor:
-			responses = {}
-			responses['records'] = []
-			contain = {}
-			get_subject = Subject.query.filter_by(subject_uuid=payload['subject_uuid'], \
-				subject_name=payload['subject_name'], tutor=get_tutor.tutor_uuid).first()
-			if get_subject:
-				if get_subject in get_tutor.subject:
-					contain['subject_name'] = get_subject.subject_name
-					get_summary = SummarySchema(many=True).dump(get_subject.summary).data
-					contain['summary'] = get_summary
-					responses['records'].append(contain)
-					return responses
-				if not get_subject in get_tutor.subject:
-					return err.requestFailed("the tutor has no such subject")
-			if not get_subject:
-				return err.requestFailed("there is no such subject")
-		if not get_tutor:
-			return err.badRequest("this account has no access in this page")	
+		if payload['tutor_uuid']:
+			get_tutor = Tutor.query.filter_by(tutor_uuid=payload['tutor_uuid'], activation=True, is_working=True,\
+				status_login=True).first()
+			if get_tutor:
+				responses = {}
+				responses['records'] = []
+				contain = {}
+				if get_subject.tutor == get_tutor.tutor_uuid:
+					if get_subject in get_tutor.subject:
+						contain['subject_name'] = get_subject.subject_name
+						get_summary = SummarySchema(many=True).dump(get_subject.summary)
+						contain['summary'] = get_summary
+						responses['records'].append(contain)
+						return responses
+					if not get_subject in get_tutor.subject:
+						return err.requestFailed("the tutor has no such subject")
+				if not get_subject:
+					return err.requestFailed("there is no such subject")
+			if not get_tutor:
+				return err.badRequest("this account has no access in this page")	
 
-		if get_student in get_subject.subscribers:
-			responses = {}
-			responses['records'] = []
-			contain = {}
-			contain['subject_name'] = get_subject.subject_name
-			get_summary = SummarySchema(many=True).dump(get_subject.summary).data
-			contain['summary'] = get_summary
-			responses['records'].append(contain)
-			return responses
-		if not get_student in get_subject.subscribers:
-			return err.badRequest('that student has not such subject')
+		if payload['student_uuid']:
+			get_student = Student.query.filter_by(student_uuid=payload['student_uuid'], status_login=True, \
+				activation=True).first()
+			if get_student in get_subject.subscribers:
+				responses = {}
+				responses['records'] = []
+				contain = {}
+				contain['subject_name'] = get_subject.subject_name
+				get_summary = SummarySchema(many=True).dump(get_subject.summary)
+				contain['summary'] = get_summary
+				responses['records'].append(contain)
+				return responses
+			if not get_student in get_subject.subscribers:
+				return err.badRequest('that student has not such subject')
 
 	# tutor can know their student and subject and vice versa
 	def getTutorStudentSubject(self, payload):
@@ -80,17 +82,21 @@ class SummaryProcess:
 			contain = {}
 			contain['student'] = []
 			get_tutor = Tutor.query.filter_by(tutor_uuid=payload['tutor_uuid'], is_working=True, activation=True).first()
-			for subject in get_tutor.subject:
-				contain['subject_name'] = subject.subject_name
-				contain['subject_uuid'] = str(subject.subject_uuid)
-				result = StudentSchema(many=True).dump(subject.subscribers).data
-				if len(result) > 0:
-					contain['student'] = result
-
-				if len(result) == 0:
-					contain['student'] = []
-
-				responses['records'].append(dict(contain))
+			if not get_tutor:
+				responses['msg'] = "No tutor available"
+				return err.requestFailed(responses)
+			if get_tutor:
+				for subject in get_tutor.subject:
+					contain['subject_name'] = subject.subject_name
+					contain['subject_uuid'] = str(subject.subject_uuid)
+					result = StudentSchema(many=True).dump(subject.subscribers)
+					if len(result) > 0:
+						contain['student'] = result
+						
+					if len(result) == 0:
+						contain['student'] = []
+						
+					responses['records'].append(dict(contain))
 			return responses
 
 	# student tanda tangan

@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
+from flask import jsonify
 import pytz
 import secrets
 import random
 import uuid
 import jwt
+import os
 
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -14,6 +16,8 @@ from app.api.create_app import db
 from app.api.config import config
 
 TIME = config.Config.time()
+key = config.Config.SECRET_KEY
+
 
 def uid():
   return uuid.uuid4()
@@ -35,6 +39,48 @@ class Admin(db.Model):
   time_logout               = db.Column(db.DateTime)
   time_created              = db.Column(db.DateTime)
 
+
+  # @staticmethod
+  def encode_auth_token(self, admin_uuid):
+    """
+    Generates the Auth Token
+    :return: string
+    """
+    try:
+        payload = {
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=5),
+            'iat': datetime.datetime.utcnow(),
+            'sub': admin_uuid
+        }
+        return jwt.encode(
+            payload,
+            key,
+            algorithm='HS256'
+        )
+    except Exception as e:
+        return e
+
+  @staticmethod  
+  def decode_auth_token(auth_token):
+    """
+    Decodes the auth token
+    :param auth_token:
+    :return: integer|string
+    """
+    try:
+      payload = jwt.decode(auth_token, os.getenv('JWT_SECRET_KEY'))
+      is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
+      if is_blacklisted_token:
+        return 'Token blacklisted. Please log in again.'
+      else:
+        return payload['sub']
+    except jwt.ExpiredSignatureError:
+      return 'Signature expired. Please log in again.'
+    except jwt.InvalidTokenError:
+      return 'Invalid token. Please log in again.'
+
+  def __repr__(self):
+    return "this admin is {}".format(self.name)
 
 tutoring = db.Table('tutoring',
   db.Column('subject_uuid', UUID(as_uuid=True), db.ForeignKey('subjects.subject_uuid')),
@@ -71,6 +117,48 @@ class Student(db.Model):
 
   def check_password_hash(self, password) :
     return check_password_hash(self.password_hash, password)
+
+  # @staticmethod
+  def encode_auth_token(self, student_uuid):
+    """
+    Generates the Auth Token
+    :return: string
+    """
+
+    try:
+        payload = {
+            'exp': datetime.utcnow() + timedelta(days=1, seconds=5),
+            'iat': datetime.utcnow(),
+            'sub': student_uuid
+        }
+        result = jwt.encode(
+            payload,
+            key,
+            algorithm='HS256'
+        )
+        return result
+    except Exception as e:
+        return e
+
+  @staticmethod  
+  def decode_auth_token(auth_token):
+    """
+    Decodes the auth token
+    :param auth_token:
+    :return: integer|string
+    """
+    # print(auth_token, 'auth', key)
+    try:
+        payload = jwt.decode(auth_token, key)
+        is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
+        if is_blacklisted_token:
+            return 'Token blacklisted. Please log in again.'
+        else:
+            return str.encode(payload['sub'])
+    except jwt.ExpiredSignatureError:
+        return 'Signature expired. Please log in again.'
+    except jwt.InvalidTokenError:
+        return 'Invalid token. Please log in again.'
 
   def __repr__(self):
     return '<this is {}>'.format(self.full_name)
@@ -156,6 +244,45 @@ class Tutor(db.Model):
   def check_password_hash(self, password) :
     return check_password_hash(self.password_hash, password)
 
+  # @staticmethod
+  def encode_auth_token(self, tutor_uuid):
+    """
+    Generates the Auth Token
+    :return: string
+    """
+    try:
+        payload = {
+          'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=5),
+          'iat': datetime.datetime.utcnow(),
+          'sub': tutor_uuid
+        }
+        return jwt.encode(
+          payload,
+          key,
+          algorithm='HS256'
+        )
+    except Exception as e:
+        return e
+
+  @staticmethod  
+  def decode_auth_token(auth_token):
+    """
+    Decodes the auth token
+    :param auth_token:
+    :return: integer|string
+    """
+    try:
+        payload = jwt.decode(auth_token, os.getenv('JWT_SECRET_KEY'))
+        is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
+        if is_blacklisted_token:
+            return 'Token blacklisted. Please log in again.'
+        else:
+            return payload['sub']
+    except jwt.ExpiredSignatureError:
+        return 'Signature expired. Please log in again.'
+    except jwt.InvalidTokenError:
+        return 'Invalid token. Please log in again.'
+
   def __repr__(self):
     return '<this is {}>'.format(self.full_name)
     
@@ -209,32 +336,31 @@ class Summary(db.Model):
 
 
 
-# class BlacklistToken(db.Model):
-#     """
-#     Token Model for storing JWT tokens
-#     """
-#     __tablename__ = 'blacklist_tokens'
+class BlacklistToken(db.Model):
+  """
+  Token Model for storing JWT tokens
+  """
+  __tablename__ = 'blacklist_tokens'
 
-#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-#     token = db.Column(db.String(500), unique=True, nullable=False)
-#     blacklisted_on = db.Column(db.DateTime, nullable=False)
+  id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+  token = db.Column(db.String(500), unique=True, nullable=False)
+  blacklisted_on = db.Column(db.DateTime, nullable=False)
 
-#     def __init__(self, token):
-#         self.token = token
-#         self.blacklisted_on = TIME
+  def __init__(self, token):
+      self.token = token
+      self.blacklisted_on = TIME
 
-#     def __repr__(self):
-#         return '<id: token: {}'.format(self.token)
+  @staticmethod
+  def check_blacklist(auth_token):
+    # print(type(auth_token))
+    # check whether auth token has been blacklisted
+    # print(auth_token)
+    res = BlacklistToken.query.filter_by(token=auth_token).first()
 
-#     @staticmethod
-#     def check_blacklist(auth_token):
-#         # print(type(auth_token))
-#         # check whether auth token has been blacklisted
-#         # print(auth_token)
-#         res = BlacklistToken.query.filter_by(token=auth_token).first()
-#         print(res)
-#         print('wew')
-#         if res:
-#             return True
-#         else:
-#             return False
+    if res:
+        return True
+    else:
+        return False
+
+  def __repr__(self):
+    return '<id: token: {}'.format(self.token)

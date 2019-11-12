@@ -200,5 +200,6 @@ class UpdatePasswordSchema(Schema):
   confirm_new_password    = fields.Str(required=True, validate=cannot_be_blank)
 
 class ForgetPasswordSchema(Schema):
+  email                   = fields.Email(required=True, validate=cannot_be_blank)
   new_password            = fields.Str(required=True, validate=cannot_be_blank)
   confirm_new_password    = fields.Str(required=True, validate=cannot_be_blank)

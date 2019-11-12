@@ -1,0 +1,12 @@
+POSTGRES_USER=tutor
+POSTGRES_PASSWORD=tutor
+POSTGRES_DB=db_tutor_dev
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+JWT_SECRET_KEY=ajsdgna9@#^&$*%(>?.,\{P-+)&*})
+DB_DRIVE=postgresql
+DB_USERNAME=tutor
+DB_PASSWORD=tutor
+DB_HOSTNAME=postgres
+DB_NAME=db_tutor
+PORT_ENV=5050
